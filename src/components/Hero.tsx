@@ -45,7 +45,7 @@ export function Hero() {
               )
             })}
           </h1>
-          <p className="lede">Fair price in Broadview. Walk in or text us a photo.</p>
+          <p className="lede">Fair price in Broadview. Walk in, call or text.</p>
           <CallTextPair size="lg" tone="hero" />
         </FrostedPlate>
       </div>
