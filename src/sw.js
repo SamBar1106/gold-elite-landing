@@ -1,7 +1,7 @@
 /* Gold Elite media cache.
    Bump GE_CACHE when a clip's bytes change at the same URL.
    New filenames do not need a bump. */
-const GE_CACHE = "ge-media-v1"
+const GE_CACHE = "ge-media-v2"
 const BASE = __GE_BASE__
 const SHELL = __GE_SHELL__
 const MEDIA_PREFIX = BASE + "media/"
