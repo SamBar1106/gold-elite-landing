@@ -1,21 +1,37 @@
-import { useEffect } from "react"
+import { lazy, Suspense, useEffect, useState } from "react"
 import { ReactLenis } from "lenis/react"
-import { MarbleField } from "./components/MarbleField"
-import { CashFlash } from "./components/CashFlash"
 import { Hero } from "./components/Hero"
-import { HowItWorks } from "./components/HowItWorks"
 import { MobileCallBar } from "./components/MobileCallBar"
-import { QuoteBlock } from "./components/QuoteBlock"
-import { Gleam } from "./components/Reveal"
-import { SiteFooter } from "./components/SiteFooter"
 import { SiteNav } from "./components/SiteNav"
-import { Visit } from "./components/Visit"
-import { WhatWeBuy } from "./components/WhatWeBuy"
-import { watchHeroThenWarm } from "./lib/warmMedia"
+
+const BelowFold = lazy(() => import("./below"))
+
+function DeferredRest() {
+  const [show, setShow] = useState(false)
+
+  useEffect(() => {
+    const start = () => setShow(true)
+    const host = window as Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number
+      cancelIdleCallback?: (id: number) => void
+    }
+    if (typeof host.requestIdleCallback === "function") {
+      const id = host.requestIdleCallback(start, { timeout: 1500 })
+      return () => host.cancelIdleCallback?.(id)
+    }
+    const id = window.setTimeout(start, 400)
+    return () => window.clearTimeout(id)
+  }, [])
+
+  if (!show) return null
+  return (
+    <Suspense fallback={null}>
+      <BelowFold />
+    </Suspense>
+  )
+}
 
 export default function App() {
-  useEffect(() => watchHeroThenWarm(), [])
-
   return (
     <ReactLenis
       root
@@ -26,24 +42,14 @@ export default function App() {
         stopInertiaOnNavigate: true,
       }}
     >
-      <MarbleField />
       <a className="skip" href="#main">
         Skip to content
       </a>
       <SiteNav />
       <main id="main">
         <Hero />
-        <CashFlash />
-        <Gleam />
-        <HowItWorks />
-        <Gleam />
-        <WhatWeBuy />
-        <Gleam />
-        <QuoteBlock />
-        <Gleam />
-        <Visit />
+        <DeferredRest />
       </main>
-      <SiteFooter />
       <MobileCallBar />
     </ReactLenis>
   )

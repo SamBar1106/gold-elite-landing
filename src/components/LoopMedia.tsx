@@ -1,15 +1,14 @@
 import { useEffect, useRef, useState } from "react"
 import type { Clip } from "../content/media"
 import { useReducedMotionSafe } from "../hooks/useReducedMotionSafe"
-import { afterHeroPlaying, notifyHeroPlaying } from "../lib/heroGate"
-import { prefetchMedia } from "../lib/warmMedia"
+import { notifyHeroPlaying } from "../lib/heroGate"
 
 type Props = {
   clip: Clip
   /** Hero only. Preloads immediately and calls play() on mount. */
   priority?: boolean
-  /** Wait until the hero can play through before this clip may download. */
-  defer?: boolean
+  /** Full-page marble. Plays only when no chapter video needs the decoder. */
+  background?: boolean
   decorative?: boolean
 }
 
@@ -22,7 +21,7 @@ type Slot = {
 }
 
 const slots = new Map<HTMLVideoElement, Slot>()
-const MAX_DECODERS = 2
+const MAX_DECODERS = 1
 let kickBound = false
 
 function reconcile() {
@@ -87,15 +86,14 @@ function bindKick() {
  * Only the hero (priority) downloads on load. Other clips stay src-less
  * until they are near the viewport.
  */
-export function LoopMedia({ clip, priority = false, defer = false, decorative = false }: Props) {
+export function LoopMedia({ clip, priority = false, background = false, decorative = false }: Props) {
   const reduce = useReducedMotionSafe()
   const rootRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const [near, setNear] = useState(priority)
-  const [released, setReleased] = useState(priority || !defer)
   const [playing, setPlaying] = useState(false)
   const showVideo = Boolean(clip.src) && !reduce
-  const loadNow = priority || (near && released)
+  const loadNow = priority || near
 
   const attach = (node: HTMLVideoElement | null) => {
     if (videoRef.current && videoRef.current !== node) slots.delete(videoRef.current)
@@ -107,7 +105,7 @@ export function LoopMedia({ clip, priority = false, defer = false, decorative = 
     slots.set(node, {
       node,
       priority,
-      background: defer,
+      background,
       ratio: priority ? 1 : 0,
     })
     bindKick()
@@ -133,30 +131,6 @@ export function LoopMedia({ clip, priority = false, defer = false, decorative = 
     observer.observe(root)
     return () => observer.disconnect()
   }, [priority])
-
-  useEffect(() => {
-    if (!defer || priority) return
-    return afterHeroPlaying(() => setReleased(true))
-  }, [defer, priority])
-
-  // Buffer the next clip about one viewport before it arrives. Playback still
-  // waits until the section is actually on screen.
-  useEffect(() => {
-    if (!clip.src || priority || defer) return
-    const root = rootRef.current
-    if (!root) return
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry?.isIntersecting) prefetchMedia(clip.src)
-      },
-      { rootMargin: "0px 0px 100% 0px", threshold: 0 },
-    )
-    const stop = afterHeroPlaying(() => observer.observe(root))
-    return () => {
-      stop()
-      observer.disconnect()
-    }
-  }, [clip.src, priority, defer])
 
   useEffect(() => {
     const root = rootRef.current

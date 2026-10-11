@@ -1,9 +1,6 @@
 import type { ReactNode } from "react"
 
-/**
- * Tilt and blur live on the same element. A child blur inside a transformed
- * parent only paints the scrim, which is why the plate looked like a flat card.
- */
+/** Tilt stays on the plate. The fill is a solid scrim so it never samples the video. */
 export function FrostedPlate({
   children,
   center = false,

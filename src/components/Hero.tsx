@@ -3,9 +3,7 @@ import { useRef, useState } from "react"
 import { useReducedMotionSafe } from "../hooks/useReducedMotionSafe"
 import { CallTextPair } from "./CallText"
 import { FrostedPlate } from "./FrostedPlate"
-import { HeroCarousel } from "./HeroCarousel"
-
-const ease = [0.22, 1, 0.36, 1] as const
+import { HeroCarousel, type HeroFrame } from "./HeroCarousel"
 
 const headlines = [
   ["Sell gold & silver.", "Cash today."],
@@ -13,10 +11,12 @@ const headlines = [
   ["Cash for silver.", "Paid today."],
 ] as const
 
+const settled: HeroFrame = { current: 0, incoming: null, moving: false }
+
 export function Hero() {
   const ref = useRef<HTMLElement>(null)
   const reduce = useReducedMotionSafe()
-  const [lit, setLit] = useState(0)
+  const [frame, setFrame] = useState<HeroFrame>(settled)
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start start", "end start"],
@@ -25,43 +25,35 @@ export function Hero() {
 
   return (
     <section className="hero" id="hero" ref={ref} aria-labelledby="hero-title">
-      <motion.div
-        className="hero__media frame"
-        style={reduce ? undefined : { scale }}
-        initial={reduce ? false : { clipPath: "inset(16% 10% 16% 10%)" }}
-        animate={{ clipPath: "inset(0% 0% 0% 0%)" }}
-        transition={{ duration: 1.35, ease }}
-      >
-        <HeroCarousel onLit={setLit} />
+      <motion.div className="hero__media frame" style={reduce ? undefined : { scale }}>
+        <HeroCarousel onFrame={setFrame} />
       </motion.div>
       <div className="hero__shade" aria-hidden="true" />
       <div className="hero__content">
-        <motion.div
-          initial={reduce ? false : { opacity: 0, y: 72, scale: 0.92 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.95, delay: reduce ? 0 : 0.15, ease }}
-        >
-          <FrostedPlate>
-            <span className="plate__rule" aria-hidden="true" />
-            <h1 id="hero-title" className="green-title hero-title" aria-live="off">
-              {headlines.map((lines, index) => (
-                <span
-                  key={lines[0]}
-                  className={index === lit ? "is-on" : ""}
-                  aria-hidden={index === lit ? undefined : true}
-                >
+        <FrostedPlate>
+          <span className="plate__rule" aria-hidden="true" />
+          <h1 id="hero-title" className="green-title hero-title" aria-live="off">
+            {headlines.map((lines, index) => {
+              const isIncoming = index === frame.incoming
+              const isCurrent = index === frame.current
+              let className = ""
+              if (isIncoming && frame.moving) className = "is-in is-go"
+              else if (isIncoming) className = "is-in"
+              else if (isCurrent && frame.moving && frame.incoming !== null) className = "is-out"
+              else if (isCurrent) className = "is-current"
+              const shown = className === "is-current" || className === "is-in is-go"
+              return (
+                <span key={lines[0]} className={className} aria-hidden={shown ? undefined : true}>
                   {lines[0]}
                   <br />
                   {lines[1]}
                 </span>
-              ))}
-            </h1>
-            <p className="lede">
-              Fair price in Broadview. Walk in or text us a photo.
-            </p>
-            <CallTextPair size="lg" tone="hero" />
-          </FrostedPlate>
-        </motion.div>
+              )
+            })}
+          </h1>
+          <p className="lede">Fair price in Broadview. Walk in or text us a photo.</p>
+          <CallTextPair size="lg" tone="hero" />
+        </FrostedPlate>
       </div>
     </section>
   )

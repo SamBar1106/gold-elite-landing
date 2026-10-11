@@ -1,4 +1,4 @@
-import { AnimatePresence, motion, useMotionValueEvent, useScroll, useTransform } from "motion/react"
+import { motion, useMotionValueEvent, useScroll, useTransform } from "motion/react"
 import { useRef, useState } from "react"
 import { media, type Clip } from "../content/media"
 import { chapters } from "../content/site"
@@ -10,8 +10,6 @@ const clips: Record<(typeof chapters)[number]["mediaKey"], Clip> = {
   weigh: media.weigh,
   cashChapter: media.cashChapter,
 }
-
-const ease = [0.22, 1, 0.36, 1] as const
 
 export function HowItWorks() {
   const ref = useRef<HTMLElement>(null)
@@ -67,18 +65,9 @@ export function HowItWorks() {
         </div>
         {reduce ? null : (
           <div className="how__stage frame" aria-hidden="true">
-            <AnimatePresence initial={false}>
-              <motion.div
-                key={active.id}
-                className="how__layer is-on"
-                initial={{ opacity: 0, scale: 1.14 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.55, ease }}
-              >
-                <LoopMedia clip={clips[active.mediaKey]} />
-              </motion.div>
-            </AnimatePresence>
+            <div key={active.id} className="how__layer is-on">
+              <LoopMedia clip={clips[active.mediaKey]} />
+            </div>
           </div>
         )}
       </div>

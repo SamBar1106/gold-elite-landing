@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs"
+import { readdirSync, readFileSync, writeFileSync } from "node:fs"
 import { resolve } from "node:path"
 import react from "@vitejs/plugin-react"
 import { defineConfig, type Plugin } from "vite"
@@ -17,20 +17,7 @@ function withBase(base: string, path: string) {
   return `${base}${path.replace(/^\/+/, "")}`
 }
 
-const POSTERS = [
-  "/media/logo.png",
-  "/media/hero.jpg",
-  "/media/gold-storefront.webp",
-  "/media/silver-tumble.webp",
-  "/media/cash.jpg",
-  "/media/bring-in.jpg",
-  "/media/weigh.jpg",
-  "/media/chains.jpg",
-  "/media/rings.jpg",
-  "/media/scrap.jpg",
-  "/media/bars.jpg",
-  "/media/website-background.jpg",
-]
+const POSTERS = ["/media/logo.png", "/media/hero.jpg"]
 
 /** Writes dist/sw.js with the hashed shell files from this build. */
 function serviceWorker(): Plugin {
@@ -46,7 +33,7 @@ function serviceWorker(): Plugin {
         return rel.startsWith("/") ? rel : `/${rel}`
       }
       for (const item of Object.values(bundle)) {
-        if (item.type === "chunk" && item.fileName.endsWith(".js")) {
+        if (item.type === "chunk" && item.isEntry && item.fileName.endsWith(".js")) {
           shell.add(withBase(base, item.fileName))
         }
         if (item.type === "asset" && item.fileName.endsWith(".css")) {
@@ -59,14 +46,14 @@ function serviceWorker(): Plugin {
           for (const match of text.matchAll(/(?:src|href)="([^"]+)"/g)) {
             const path = match[1]
             const rel = rooted(path)
-            if (!rel || rel.endsWith(".mp4")) continue
+            if (!rel || rel.endsWith(".mp4") || rel.endsWith(".woff")) continue
             if (rel.startsWith("/assets/") || rel.startsWith("/media/")) shell.add(path)
           }
         }
         if (item.fileName.endsWith(".css")) {
           for (const match of text.matchAll(/url\((['"]?)([^)'"]+)\1\)/g)) {
             const path = match[2]
-            if (path.startsWith("data:")) continue
+            if (path.startsWith("data:") || path.endsWith(".woff")) continue
             const absolute = path.startsWith("/") ? path : withBase(base, path.replace(/^\.\//, ""))
             const rel = rooted(absolute)
             if (rel?.startsWith("/assets/") || rel?.startsWith("/media/")) shell.add(absolute)
@@ -82,6 +69,20 @@ function serviceWorker(): Plugin {
           .replace("__GE_SHELL__", JSON.stringify([...shell])),
       })
     },
+    writeBundle() {
+      const base = siteBase()
+      const htmlPath = resolve("dist/index.html")
+      const fonts = readdirSync(resolve("dist/assets")).filter((name) =>
+        /inter-latin-(400|700)-normal-.+\.woff2$/.test(name),
+      )
+      const links = fonts
+        .map((name) => `<link rel="preload" as="font" type="font/woff2" href="${base}assets/${name}" crossorigin>`)
+        .join("\n    ")
+      if (!links) return
+      const html = readFileSync(htmlPath, "utf8")
+      if (html.includes('rel="preload" as="font"')) return
+      writeFileSync(htmlPath, html.replace("</head>", `    ${links}\n  </head>`))
+    },
   }
 }
 
@@ -89,8 +90,7 @@ export default defineConfig({
   base: siteBase(),
   plugins: [react(), serviceWorker()],
   build: {
-    // LightningCSS drops unprefixed backdrop-filter and leaves only -webkit,
-    // so Chrome never blurs the plate. Leave CSS unminified so both survive.
+    // Keep both prefixed and unprefixed declarations. LightningCSS minify drops one of them.
     cssMinify: false,
   },
   css: {
