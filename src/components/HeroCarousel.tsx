@@ -167,6 +167,20 @@ export function HeroCarousel({ onFrame }: Props) {
   )
 
   useEffect(() => {
+    const boot = document.querySelector(".boot-poster")
+    if (!boot) return
+    const drop = () => boot.remove()
+    const video = videos.current[0]
+    if (video && video.readyState >= 2) drop()
+    else video?.addEventListener("loadeddata", drop, { once: true })
+    const timer = window.setTimeout(drop, 2500)
+    return () => {
+      window.clearTimeout(timer)
+      video?.removeEventListener("loadeddata", drop)
+    }
+  }, [])
+
+  useEffect(() => {
     return () => {
       if (wipeTimer.current !== null) window.clearTimeout(wipeTimer.current)
     }

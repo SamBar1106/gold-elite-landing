@@ -76,7 +76,10 @@ function serviceWorker(): Plugin {
         /inter-latin-(400|700)-normal-.+\.woff2$/.test(name),
       )
       const links = fonts
-        .map((name) => `<link rel="preload" as="font" type="font/woff2" href="${base}assets/${name}" crossorigin>`)
+        .map(
+          (name) =>
+            `<link rel="preload" as="font" type="font/woff2" href="${base}assets/${name}" crossorigin fetchpriority="low">`,
+        )
         .join("\n    ")
       if (!links) return
       const html = readFileSync(htmlPath, "utf8")

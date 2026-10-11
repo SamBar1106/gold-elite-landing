@@ -5,7 +5,7 @@ export function SiteNav() {
   return (
     <header className="nav">
       <a className="nav__logo" href="#hero" aria-label="Gold Elite, back to top">
-        <img src={media.logo} alt="" width={512} height={478} />
+        <img src={media.logo} alt="" width={512} height={478} decoding="async" fetchPriority="low" />
       </a>
       <nav className="nav__bar" aria-label="Primary">
         <a className="nav__link" href="#hours">

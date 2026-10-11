@@ -34,16 +34,10 @@ export function Hero() {
           <span className="plate__rule" aria-hidden="true" />
           <h1 id="hero-title" className="green-title hero-title" aria-live="off">
             {headlines.map((lines, index) => {
-              const isIncoming = index === frame.incoming
-              const isCurrent = index === frame.current
-              let className = ""
-              if (isIncoming && frame.moving) className = "is-in is-go"
-              else if (isIncoming) className = "is-in"
-              else if (isCurrent && frame.moving && frame.incoming !== null) className = "is-out"
-              else if (isCurrent) className = "is-current"
-              const shown = className === "is-current" || className === "is-in is-go"
+              const shownIndex = frame.moving && frame.incoming !== null ? frame.incoming : frame.current
+              const shown = index === shownIndex
               return (
-                <span key={lines[0]} className={className} aria-hidden={shown ? undefined : true}>
+                <span key={lines[0]} className={shown ? "is-current" : ""} aria-hidden={shown ? undefined : true}>
                   {lines[0]}
                   <br />
                   {lines[1]}
